@@ -77,7 +77,7 @@ func TestAppend(t *testing.T) {
 func TestRead(t *testing.T) {
 	t.Run("empty log", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/0", nil)
+		req := httptest.NewRequest(http.MethodGet, "/read/0", nil)
 		defer req.Body.Close()
 
 		log := &appendLog{}
@@ -88,7 +88,7 @@ func TestRead(t *testing.T) {
 
 	t.Run("invalid method", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPost, "/0", nil)
+		req := httptest.NewRequest(http.MethodPost, "/read/0", nil)
 		defer req.Body.Close()
 
 		log := &appendLog{}
@@ -99,7 +99,7 @@ func TestRead(t *testing.T) {
 
 	t.Run("too big offset", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/123", nil)
+		req := httptest.NewRequest(http.MethodGet, "/read/123", nil)
 		defer req.Body.Close()
 
 		log := &appendLog{}
@@ -111,7 +111,7 @@ func TestRead(t *testing.T) {
 
 	t.Run("correct offset", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/0", nil)
+		req := httptest.NewRequest(http.MethodGet, "/read/0", nil)
 		defer req.Body.Close()
 
 		log := &appendLog{}

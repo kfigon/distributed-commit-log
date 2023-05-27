@@ -15,9 +15,13 @@ func main() {
 
 	theLog := &appendLog{}
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		writeError(w, newHttpError(fmt.Errorf("not found"), http.StatusNotFound))
+	})
+	
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/append", loggingMiddleware(appendToLog(theLog)))
-	http.HandleFunc("/read", loggingMiddleware(readFromLog(theLog)))
+	http.HandleFunc("/read/", loggingMiddleware(readFromLog(theLog)))
 
 	log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
@@ -71,7 +75,7 @@ func appendToLog(l *appendLog) http.HandlerFunc {
 
 func readFromLog(l *appendLog) http.HandlerFunc {
 	return withHttpMethod(http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
-		offset := strings.TrimPrefix(r.URL.Path, "/")
+		offset := strings.TrimPrefix(r.URL.Path, "/read/")
 		bytes, err := l.read(offset)
 		if err != nil {
 			writeError(w, err)
