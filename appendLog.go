@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"strconv"
 	"sync"
 )
@@ -18,12 +17,14 @@ type appendLog struct {
 	records []record
 }
 
+type validationError error
+
 func (a *appendLog) append(data io.ReadCloser) (int, error) {
 	bytes, err := io.ReadAll(data)
 	if err != nil {
-		return 0, httpError{fmt.Errorf("error reading request: %w", err), http.StatusBadRequest}
+		return 0, validationError(fmt.Errorf("error reading request: %w", err))
 	} else if len(bytes) == 0 {
-		return 0, httpError{fmt.Errorf("empty request provided"), http.StatusBadRequest}
+		return 0, validationError(fmt.Errorf("empty request provided"))
 	}
 
 	a.lock.Lock()
@@ -39,9 +40,9 @@ func (a *appendLog) append(data io.ReadCloser) (int, error) {
 func (a *appendLog) read(rawId string) ([]byte, error) {
 	offset, err := strconv.Atoi(rawId)
 	if err != nil {
-		return nil, httpError{fmt.Errorf("can't parse path paramenter: %w", err), http.StatusBadRequest}
+		return nil, validationError(fmt.Errorf("can't parse path paramenter: %w", err))
 	} else if offset >= len(a.records) {
-		return nil, httpError{fmt.Errorf("can't find offset: %d", offset), http.StatusBadRequest}
+		return nil, validationError(fmt.Errorf("can't find offset: %d", offset))
 	}
 
 	a.lock.Lock()

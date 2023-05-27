@@ -86,6 +86,17 @@ func TestRead(t *testing.T) {
 		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 0"})
 	})
 
+	t.Run("invalid method", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/0", nil)
+		defer req.Body.Close()
+
+		log := &appendLog{}
+		readFromLog(log)(rec, req)
+
+		assertJson(t, rec, http.StatusNotFound, map[string]string{"error": "method not found"})
+	})
+
 	t.Run("too big offset", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/123", nil)

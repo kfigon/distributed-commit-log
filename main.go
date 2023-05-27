@@ -33,6 +33,10 @@ type httpError struct {
 	status int
 }
 
+func newHttpError(err error, status int) httpError {
+	return httpError{err, status}
+}
+
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -44,7 +48,7 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func withHttpMethod(allowedMethod string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != allowedMethod {
-			writeError(w, httpError{fmt.Errorf("method not found"), http.StatusNotFound})
+			writeError(w, newHttpError(fmt.Errorf("method not found"), http.StatusNotFound))
 			return
 		}
 		next(w,r)
@@ -77,7 +81,7 @@ func readFromLog(l *appendLog) http.HandlerFunc {
 		w.Header().Set("Content-type", "application/json")
 		_, err = w.Write(bytes)
 		if err != nil {
-			writeError(w, httpError{fmt.Errorf("error serialising user data at offset %s: %w", offset, err), http.StatusInternalServerError})
+			writeError(w, newHttpError(fmt.Errorf("error serialising user data at offset %s: %w", offset, err), http.StatusInternalServerError))
 			return
 		}
 	})
@@ -88,6 +92,10 @@ func writeError(w http.ResponseWriter, err error) {
 		var httpErr httpError
 		if errors.As(err, &httpErr) {
 			return httpErr.status
+		}
+		var valErr validationError
+		if errors.As(err, &valErr) {
+			return http.StatusBadRequest
 		}
 		return http.StatusInternalServerError
 	}
