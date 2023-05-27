@@ -33,7 +33,7 @@ func TestAppend(t *testing.T) {
 		assertJson(t, rec, http.StatusOK, map[string]int{"offset": 0})
 	})
 
-	t.Run("correct input twice", func(t *testing.T) {
+	t.Run("double append", func(t *testing.T) {
 		log := &appendLog{}
 
 		rec := httptest.NewRecorder()
