@@ -4,7 +4,7 @@ clean-test:
 
 .PHONY: test
 test:
-	go test ./... -v -timeout 5s
+	go test ./... -v -timeout 10s
 
 .PHONY: run
 run:

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -17,7 +18,8 @@ func main() {
 	theLog := &appendLog{}
 
 	http.HandleFunc("/health", healthCheck)
-	http.HandleFunc("/append", appendToLog(theLog))
+	http.HandleFunc("/append", loggingMiddleware(appendToLog(theLog)))
+	http.HandleFunc("/read", loggingMiddleware(readFromLog(theLog)))
 
 	log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
@@ -36,6 +38,14 @@ type record struct {
 type appendLog struct {
 	lock    sync.Mutex
 	records []record
+}
+
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next(w,r)
+		log.Printf("%v %v, took %v\n", r.Method, r.URL, time.Since(start))
+	}
 }
 
 func appendToLog(l *appendLog) http.HandlerFunc {
