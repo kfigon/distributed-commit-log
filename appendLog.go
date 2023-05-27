@@ -41,7 +41,7 @@ func (a *appendLog) read(rawId string) ([]byte, error) {
 	if err != nil {
 		return nil, httpError{fmt.Errorf("can't parse path paramenter: %w", err), http.StatusBadRequest}
 	} else if offset >= len(a.records) {
-		return nil, httpError{fmt.Errorf("too big offset provided: %d", offset), http.StatusBadRequest}
+		return nil, httpError{fmt.Errorf("can't find offset: %d", offset), http.StatusBadRequest}
 	}
 
 	a.lock.Lock()

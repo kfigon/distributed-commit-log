@@ -83,7 +83,7 @@ func TestRead(t *testing.T) {
 		log := &appendLog{}
 		readFromLog(log)(rec, req)
 
-		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "too big offset provided: 0"})
+		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 0"})
 	})
 
 	t.Run("too big offset", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestRead(t *testing.T) {
 		log.records = append(log.records, record{data: []byte(`{"foo": "bar"}`), offset: 0})
 		readFromLog(log)(rec, req)
 
-		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "too big offset provided: 123"})
+		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 123"})
 	})
 
 	t.Run("correct offset", func(t *testing.T) {
