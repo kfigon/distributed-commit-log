@@ -18,7 +18,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, newHttpError(fmt.Errorf("not found"), http.StatusNotFound))
 	})
-	
+
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/append", loggingMiddleware(appendToLog(theLog)))
 	http.HandleFunc("/read/", loggingMiddleware(readFromLog(theLog)))
