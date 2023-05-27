@@ -58,7 +58,7 @@ func appendToLog(l *appendLog) http.HandlerFunc {
 			writeError(w, err)
 			return
 		}
-		
+
 		writeJson(w, map[string]int{
 			"offset": offset,
 		})
@@ -84,15 +84,16 @@ func readFromLog(l *appendLog) http.HandlerFunc {
 }
 
 func writeError(w http.ResponseWriter, err error) {
-	status := http.StatusInternalServerError
-
-	var httpErr httpError
-	if errors.As(err, &httpErr) {
-		status = httpErr.status
+	status := func() int {
+		var httpErr httpError
+		if errors.As(err, &httpErr) {
+			return httpErr.status
+		}
+		return http.StatusInternalServerError
 	}
 
 	w.Header().Set("Content-type", "application/json")
-	w.WriteHeader(status)
+	w.WriteHeader(status())
 	json.NewEncoder(w).Encode(map[string]string{
 		"error": err.Error(),
 	})
