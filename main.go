@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -30,14 +28,9 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-type record struct {
-	data   []byte
-	offset int
-}
-
-type appendLog struct {
-	lock    sync.Mutex
-	records []record
+type httpError struct {
+	error
+	status int
 }
 
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -48,65 +41,56 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func appendToLog(l *appendLog) http.HandlerFunc {
+func withHttpMethod(allowedMethod string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			writeError(w, fmt.Errorf("method not found"), http.StatusNotFound)
+		if r.Method != allowedMethod {
+			writeError(w, httpError{fmt.Errorf("method not found"), http.StatusNotFound})
 			return
 		}
-
-		bytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, fmt.Errorf("error reading request: %w", err), http.StatusBadRequest)
-			return
-		} else if len(bytes) == 0 {
-			writeError(w, fmt.Errorf("empty request provided"), http.StatusBadRequest)
-			return
-		}
-
-		l.lock.Lock()
-		defer l.lock.Unlock()
-		rec := record{
-			data:   bytes,
-			offset: len(l.records),
-		}
-		l.records = append(l.records, rec)
-
-		writeJson(w, map[string]int{
-			"offset": rec.offset,
-		})
+		next(w,r)
 	}
+}
+
+func appendToLog(l *appendLog) http.HandlerFunc {
+	return withHttpMethod(http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+		offset, err := l.append(r.Body)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		
+		writeJson(w, map[string]int{
+			"offset": offset,
+		})
+	})
 }
 
 func readFromLog(l *appendLog) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			writeError(w, fmt.Errorf("method not found"), http.StatusNotFound)
-			return
-		}
-
-		rawId := strings.TrimPrefix(r.URL.Path, "/")
-		offset, err := strconv.Atoi(rawId)
+	return withHttpMethod(http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
+		offset := strings.TrimPrefix(r.URL.Path, "/")
+		bytes, err := l.read(offset)
 		if err != nil {
-			writeError(w, fmt.Errorf("can't parse path paramenter: %w", err), http.StatusBadRequest)
-			return
-		} else if offset >= len(l.records) {
-			writeError(w, fmt.Errorf("too big offset provided: %d", offset), http.StatusBadRequest)
+			writeError(w, err)
 			return
 		}
 
-		l.lock.Lock()
-		defer l.lock.Unlock()
 		w.Header().Set("Content-type", "application/json")
-		_, err = w.Write(l.records[offset].data)
+		_, err = w.Write(bytes)
 		if err != nil {
-			writeError(w, fmt.Errorf("error serialising user data at offset %d: %w", offset, err), http.StatusInternalServerError)
+			writeError(w, httpError{fmt.Errorf("error serialising user data at offset %s: %w", offset, err), http.StatusInternalServerError})
 			return
 		}
-	}
+	})
 }
 
-func writeError(w http.ResponseWriter, err error, status int) {
+func writeError(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+
+	var httpErr httpError
+	if errors.As(err, &httpErr) {
+		status = httpErr.status
+	}
+
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]string{
