@@ -19,7 +19,7 @@ type appendLog struct {
 
 type validationError error
 
-func (a *appendLog) append(data io.ReadCloser) (int, error) {
+func (a *appendLog) append(data io.Reader) (int, error) {
 	bytes, err := io.ReadAll(data)
 	if err != nil {
 		return 0, validationError(fmt.Errorf("error reading request: %w", err))
