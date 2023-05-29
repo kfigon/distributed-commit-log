@@ -3,6 +3,7 @@ package web
 import (
 	"commit-log/appendlog"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -14,11 +15,15 @@ func NewServer(theLog *appendlog.AppendLog) *http.ServeMux {
 		writeError(w, newHttpError(fmt.Errorf("not found"), http.StatusNotFound))
 	})
 	mux.HandleFunc("/health", healthCheck)
-	
+
 	mux.HandleFunc("/append", appendToLog(theLog))
 	mux.HandleFunc("/read/", readFromLog(theLog))
 
 	return mux
+}
+
+func Run(mux *http.ServeMux, port int) {
+	log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
