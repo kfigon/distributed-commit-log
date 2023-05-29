@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"commit-log/appendlog"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -27,14 +28,14 @@ func TestAppend(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", buildInput(t))
 		defer req.Body.Close()
 
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 		appendToLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusOK, map[string]int{"offset": 0})
 	})
 
 	t.Run("double append", func(t *testing.T) {
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/", buildInput(t))
@@ -56,7 +57,7 @@ func TestAppend(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 		appendToLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusNotFound, map[string]string{"error": "method not found"})
@@ -67,7 +68,7 @@ func TestAppend(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 		appendToLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "empty request provided"})
@@ -80,7 +81,7 @@ func TestRead(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/read/0", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 		readFromLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 0"})
@@ -91,7 +92,7 @@ func TestRead(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/read/0", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
+		log := appendlog.NewAppendLog()
 		readFromLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusNotFound, map[string]string{"error": "method not found"})
@@ -102,8 +103,9 @@ func TestRead(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/read/123", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
-		log.records = append(log.records, record{data: []byte(`{"foo": "bar"}`), offset: 0})
+		log := appendlog.NewAppendLog()
+		log.Append(strings.NewReader(`{"foo": "bar"}`))
+
 		readFromLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 123"})
@@ -114,8 +116,8 @@ func TestRead(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/read/0", nil)
 		defer req.Body.Close()
 
-		log := &appendLog{}
-		log.records = append(log.records, record{data: []byte(`{"foo": "bar"}`), offset: 0})
+		log := appendlog.NewAppendLog()
+		log.Append(strings.NewReader(`{"foo": "bar"}`))
 		readFromLog(log)(rec, req)
 
 		assertJson(t, rec, http.StatusOK, map[string]string{"foo": "bar"})
