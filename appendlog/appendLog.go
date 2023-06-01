@@ -45,7 +45,7 @@ func (a *AppendLog) Read(rawId string) ([]byte, error) {
 	offset, err := strconv.Atoi(rawId)
 	if err != nil {
 		return nil, ValidationError(fmt.Errorf("can't parse path paramenter: %w", err))
-	} else if offset >= len(a.records) {
+	} else if offset >= len(a.records) || offset < 0 {
 		return nil, ValidationError(fmt.Errorf("can't find offset: %d", offset))
 	}
 

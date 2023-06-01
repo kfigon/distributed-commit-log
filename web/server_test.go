@@ -111,6 +111,19 @@ func TestRead(t *testing.T) {
 		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: 123"})
 	})
 
+	t.Run("negative offset", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/read/-18", nil)
+		defer req.Body.Close()
+
+		log := appendlog.NewAppendLog()
+		log.Append(strings.NewReader(`{"foo": "bar"}`))
+
+		readFromLog(log)(rec, req)
+
+		assertJson(t, rec, http.StatusBadRequest, map[string]string{"error": "can't find offset: -18"})
+	})
+
 	t.Run("correct offset", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/read/0", nil)

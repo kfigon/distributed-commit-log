@@ -26,8 +26,8 @@ func (i *Index) Store(position int) error {
 }
 
 func (i *Index) ReadPosition(offset int) (int, error) {
-	if offset >= len(i.positions) {
-		return 0, ValidationError(fmt.Errorf("too big offset %d", offset))
+	if offset >= len(i.positions) || offset < 0 {
+		return 0, ValidationError(fmt.Errorf("invalid offset %d", offset))
 	}
 	return i.positions[offset], nil
 }

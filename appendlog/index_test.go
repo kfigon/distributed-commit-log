@@ -18,6 +18,14 @@ func TestIndex(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("negative offset", func(t *testing.T) {
+		i := NewIndex(newTestBuffer())
+		defer i.Close()
+
+		_, err := i.ReadPosition(-123)
+		assert.Error(t, err)
+	})
+
 	t.Run("write and read", func(t *testing.T) {
 		i := NewIndex(newTestBuffer())
 		defer i.Close()
