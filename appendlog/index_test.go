@@ -73,7 +73,7 @@ func TestIndex(t *testing.T) {
 
 		got, err := i.ReadPosition(0)
 		assert.NoError(t, err)
-		assert.Equal(t, 0x1234, got)	
+		assert.Equal(t, 0x04030201, got)	
 
 		got, err = i.ReadPosition(1)
 		assert.NoError(t, err)
@@ -86,5 +86,37 @@ func TestIndex(t *testing.T) {
 		got, err = i.ReadPosition(3)
 		assert.NoError(t, err)
 		assert.Equal(t, 123456789, got)	
+	})
+
+	t.Run("prepopulated not aligned", func(t *testing.T) {
+		buf := newTestBuffer()
+		buf.WriteByte(1)
+		buf.WriteByte(2)
+		buf.WriteByte(3)
+
+		i := NewIndex(buf)
+		defer i.Close()
+
+		got, err := i.ReadPosition(0)
+		assert.NoError(t, err)
+		assert.Equal(t, 0x30201, got)	
+	})
+
+	t.Run("prepopulated more data", func(t *testing.T) {
+		buf := newTestBuffer()
+		for i := 1; i <= 64; i++ {
+			buf.WriteByte(byte(i))
+		}
+
+		i := NewIndex(buf)
+		defer i.Close()
+
+		got, err := i.ReadPosition(0)
+		assert.NoError(t, err)
+		assert.Equal(t, 0x807060504030201, got)	
+
+		got, err = i.ReadPosition(1)
+		assert.NoError(t, err)
+		assert.Equal(t, 0x100f0e0d0c0b0a09, got)	
 	})
 }
