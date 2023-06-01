@@ -54,4 +54,37 @@ func TestIndex(t *testing.T) {
 			assert.Equal(t, exp, got)	
 		}
 	})
+
+	t.Run("prepopulated file", func(t *testing.T) {
+		buf := newTestBuffer()
+		buf.WriteByte(1)
+		buf.WriteByte(2)
+		buf.WriteByte(3)
+		buf.WriteByte(4)
+
+		i := NewIndex(buf)
+		defer i.Close()
+
+		positions :=[]int{5,123,123456789}
+		for _, v := range positions {
+			err := i.Store(v)
+			assert.Error(t, err)
+		}
+
+		got, err := i.ReadPosition(0)
+		assert.NoError(t, err)
+		assert.Equal(t, 0x1234, got)	
+
+		got, err = i.ReadPosition(1)
+		assert.NoError(t, err)
+		assert.Equal(t, 5, got)	
+
+		got, err = i.ReadPosition(2)
+		assert.NoError(t, err)
+		assert.Equal(t, 123, got)	
+
+		got, err = i.ReadPosition(3)
+		assert.NoError(t, err)
+		assert.Equal(t, 123456789, got)	
+	})
 }
