@@ -7,14 +7,11 @@ import (
 	"sync"
 )
 
-type Record struct {
-	data   []byte
-	offset int
-}
+type record []byte
 
 type AppendLog struct {
 	lock    sync.Mutex
-	records []Record
+	records []record
 }
 
 func NewAppendLog() *AppendLog {
@@ -33,12 +30,9 @@ func (a *AppendLog) Append(data io.Reader) (int, error) {
 
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	rec := Record{
-		data:   bytes,
-		offset: len(a.records),
-	}
-	a.records = append(a.records, rec)
-	return rec.offset, nil
+	out := len(a.records)
+	a.records = append(a.records, record(bytes))
+	return out, nil
 }
 
 func (a *AppendLog) Read(rawId string) ([]byte, error) {
@@ -52,5 +46,5 @@ func (a *AppendLog) Read(rawId string) ([]byte, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
-	return a.records[offset].data, nil
+	return a.records[offset], nil
 }

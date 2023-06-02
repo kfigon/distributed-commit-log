@@ -31,7 +31,6 @@ func NewIndex(file io.ReadWriteCloser) *Index {
 		file:      file,
 		positions: out,
 	}
-	
 }
 
 func (i *Index) Store(position int) error {
