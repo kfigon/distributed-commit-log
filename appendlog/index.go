@@ -4,11 +4,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sync"
 )
 
 // bufio.Writer can reduce number of OS calls
 // memory mapped file can also give better performance
 type Index struct {
+	lock sync.Mutex
 	file      io.ReadWriteCloser
 	positions []int // offset->position
 }
@@ -29,14 +31,21 @@ func NewIndex(file io.ReadWriteCloser) *Index {
 		file:      file,
 		positions: out,
 	}
+	
 }
 
 func (i *Index) Store(position int) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	i.positions = append(i.positions, position)
 	return binary.Write(i.file, binary.LittleEndian, position)
 }
 
 func (i *Index) ReadPosition(offset int) (int, error) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	if offset >= len(i.positions) || offset < 0 {
 		return 0, ValidationError(fmt.Errorf("invalid offset %d", offset))
 	}
