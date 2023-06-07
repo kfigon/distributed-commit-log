@@ -10,3 +10,8 @@ Write-ahead logs (WAL), transaction logs, or commit logs - same thing. Used by s
 * segment - abstraction that ties store and index
 * log - all segments
 
+
+# todo:
+* distribution
+* service discovery
+* raft
